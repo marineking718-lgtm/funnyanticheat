@@ -17,7 +17,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential bison flex libssl-dev libelf-dev bc git \
-            gcc-x86-64-linux-gnu ld-lld clang ccache libncurses-dev
+            gcc-x86-64-linux-gnu lld clang ccache libncurses-dev
 
       - name: Clone AOSP Kernel Source
         run: |
