@@ -21,7 +21,7 @@ jobs:
 
       - name: Clone AOSP Kernel Source
         run: |
-          git clone --depth=1 -b android12-5.15 https://android.googlesource.com/kernel/common kernel_src
+          git clone --depth=1 -b android12-5.10 https://android.googlesource.com/kernel/common kernel_src
           cd kernel_src
           echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
 
