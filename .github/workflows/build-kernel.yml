@@ -1,0 +1,53 @@
+name: Build SukiSU Ultra Kernel for Android Emulator
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential bison flex libssl-dev libelf-dev bc git \
+            gcc-x86-64-linux-gnu ld-lld clang ccache libncurses-dev
+
+      - name: Clone AOSP Kernel Source
+        run: |
+          git clone --depth=1 -b android12-5.15 https://android.googlesource.com/kernel/common kernel_src
+          cd kernel_src
+          echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
+
+      - name: Inject SukiSU Ultra Source
+        run: |
+          cd $KERNEL_DIR
+          curl -LSs "https://raw.githubusercontent.com/twaik/SukiSU_patch/main/setup.sh" | bash -s main
+
+      - name: Apply Default x86_64 Config
+        run: |
+          cd $KERNEL_DIR
+          make ARCH=x86_64 x86_64_defconfig
+          make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- olddefconfig
+
+      - name: Compile Kernel (bzImage)
+        run: |
+          cd $KERNEL_DIR
+          make ARCH=x86_64 CROSS_COMPILE=x86_64-linux-gnu- bzImage -j$(nproc)
+
+      - name: Prepare Artifact
+        run: |
+          mkdir -p output
+          cp $KERNEL_DIR/arch/x86/boot/bzImage output/kernel
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-Ultra-Kernel-x86_64
+          path: output/kernel
