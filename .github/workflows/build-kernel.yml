@@ -1,48 +1,23 @@
-name: Build Kernel SukiSU for LDPlayer (Android 12 x86_64)
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up build dependencies
+- name: Clone Android 12 Common Kernel (5.10)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev clang lld llvm gcc-x86-64-linux-gnu
-
-      - name: Clone Android 12 Common Kernel (5.10)
-        run: |
+          rm -rf kernel_src
           git clone --depth=1 -b android12-5.10 https://android.googlesource.com/kernel/common kernel_src
 
       - name: Integrate SukiSU-Ultra
-        env:
-          KERNEL_DIR: ${{ github.workspace }}/kernel_src
         run: |
-          cd $KERNEL_DIR
+          cd ${{ github.workspace }}/kernel_src
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
 
       - name: Build x86_64 Kernel
         run: |
           cd ${{ github.workspace }}/kernel_src
+          make ARCH=x86_64 MRPROPER
           make ARCH=x86_64 x86_64_defconfig
-          # Bật các config cần thiết cho KernelSU / SukiSU nếu chưa có
+          
+          # Enable Kprobes cho SukiSU
           scripts/config --enable CONFIG_KPROBES
           scripts/config --enable CONFIG_HAVE_KPROBES
           scripts/config --enable CONFIG_KPROBE_EVENTS
+          
           make ARCH=x86_64 olddefconfig
           make ARCH=x86_64 -j$(nproc)
-
-      - name: Upload bzImage Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: LDPlayer-Android12-bzImage
-          path: kernel_src/arch/x86/boot/bzImage
